@@ -24,8 +24,8 @@ OPENAI_URL = os.getenv("OPENAI_URL")
 
 
 @app.get("/")
-def read_root():
-    return {"message": "Hello, World!"}
+async def read_root():
+    return "hello world"
 
 def upload_to_cloudconvert(video_path: str):
     print('here 1')
