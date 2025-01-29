@@ -32,7 +32,9 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Initialize FastAPI
 app = FastAPI()
 
+
 @app.get("/")
+# print('hello')
 def home():
     return {"message": "API is running!"}
 
