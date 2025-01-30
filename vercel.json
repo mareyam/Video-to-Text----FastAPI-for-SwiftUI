@@ -1,14 +1,15 @@
 {
+  "version": 2,
   "builds": [
     {
-      "src": "videototext.py",
+      "src": "api/videototext.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "videototext.py"
+      "dest": "api/videototext.py"
     }
   ]
 }
