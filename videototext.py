@@ -272,6 +272,7 @@ async def process_video(file: UploadFile = File(...)):
 
 
     # Basic file check
+    logs = []
     if not file.filename.endswith(".mp4"):
         raise HTTPException(status_code=400, detail="Only MP4 files are allowed")
 
