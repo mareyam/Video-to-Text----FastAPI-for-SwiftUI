@@ -5,6 +5,10 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from typing import Dict, List
+from fastapi.middleware.cors import CORSMiddleware
+
+
+
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +16,14 @@ load_dotenv()
 # FastAPI app initialization
 app = FastAPI()
 logs: List[str] = []
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust this to restrict allowed origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 
 # API Keys and URLs
 CLOUDCONVERT_API_KEY = os.getenv("CLOUDCONVERT_API_KEY")
