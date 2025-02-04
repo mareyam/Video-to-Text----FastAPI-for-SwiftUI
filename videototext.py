@@ -141,8 +141,8 @@ async def get_results(filename: str):
 
 
 def upload_to_cloudconvert(file_bytes: bytes, filename: str):
-    logs.append("[Step 1] Uploading to CloudConvert...")
-    print("[Step 1] Uploading to CloudConvert...")
+    # logs.append("[Step 1] Uploading to CloudConvert...")
+    # print("[Step 1] Uploading to CloudConvert...")
 
 
     url = f"{CLOUDCONVERT_URL}/import/upload"
@@ -157,15 +157,15 @@ def upload_to_cloudconvert(file_bytes: bytes, filename: str):
 
     requests.post(upload_url, files={"file": (filename, file_bytes, "video/mp4")}, data=parameters).raise_for_status()
 
-    logs.append("[Step 2] Upload finished.")
-    print("[Step 2] Upload finished.")
+    # logs.append("[Step 2] Upload finished.")
+    # print("[Step 2] Upload finished.")
 
     return upload_data["id"]
 
 
 def start_conversion(file_id: str, output_format="mp3"):
-    logs.append("[Step 3] Starting CloudConvert job...")
-    print("[Step 3] Starting CloudConvert job...")
+    # logs.append("[Step 3] Starting CloudConvert job...")
+    # print("[Step 3] Starting CloudConvert job...")
 
     url = f"{CLOUDCONVERT_URL}/jobs"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}", "Content-Type": "application/json"}
@@ -174,14 +174,14 @@ def start_conversion(file_id: str, output_format="mp3"):
     response = requests.post(url, json=data, headers=headers)
     response.raise_for_status()
 
-    logs.append("[Step 4] Conversion job started.")
-    print("[Step 4] Conversion job started.")
+    # logs.append("[Step 4] Conversion job started.")
+    # print("[Step 4] Conversion job started.")
     return response.json()["data"]["id"]
 
 
 def get_job_status(job_id: str):
-    logs.append("[Step 5] Checking job status...")
-    print("[Step 5] Checking job status...")
+    # logs.append("[Step 5] Checking job status...")
+    # print("[Step 5] Checking job status...")
 
     url = f"{CLOUDCONVERT_URL}/jobs/{job_id}"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}"}
@@ -189,14 +189,14 @@ def get_job_status(job_id: str):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
 
-    logs.append("[Step 6] Job status retrieved.")
-    print("[Step 6] Job status retrieved.")
+    # logs.append("[Step 6] Job status retrieved.")
+    # print("[Step 6] Job status retrieved.")
     return response.json()["data"]
 
 
 def create_export_task(file_id: str):
-    logs.append("[Step 7] Creating export task...")
-    print("[Step 7] Creating export task...")
+    # logs.append("[Step 7] Creating export task...")
+    # print("[Step 7] Creating export task...")
 
     url = f"{CLOUDCONVERT_URL}/jobs"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}", "Content-Type": "application/json"}
@@ -205,14 +205,14 @@ def create_export_task(file_id: str):
     response = requests.post(url, json=data, headers=headers)
     response.raise_for_status()
 
-    logs.append("[Step 8] Export task created.")
-    print("[Step 8] Export task created.")
+    # logs.append("[Step 8] Export task created.")
+    # print("[Step 8] Export task created.")
     return response.json()["data"]["id"]
 
 
 def get_export_download_url(job_id: str):
-    logs.append("[Step 9] Getting export download URL...")
-    print("[Step 9] Getting export download URL...")
+    # logs.append("[Step 9] Getting export download URL...")
+    # print("[Step 9] Getting export download URL...")
 
     url = f"{CLOUDCONVERT_URL}/jobs/{job_id}"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}"}
@@ -222,16 +222,16 @@ def get_export_download_url(job_id: str):
 
     for task in response.json()["data"]["tasks"]:
         if task["operation"] == "export/url" and task["status"] == "finished":
-            logs.append("[Step 10] Download URL found.")
-            print("[Step 10] Download URL found.")
+            # logs.append("[Step 10] Download URL found.")
+            # print("[Step 10] Download URL found.")
             return task["result"]["files"][0]["url"]
 
     return None
 
 
 def download_audio(audio_url: str, output_path="audio.mp3"):
-    logs.append("[Step 11] Downloading audio file...")
-    print("[Step 11] Downloading audio file...")
+    # logs.append("[Step 11] Downloading audio file...")
+    # print("[Step 11] Downloading audio file...")
 
     response = requests.get(audio_url)
     response.raise_for_status()
@@ -239,15 +239,15 @@ def download_audio(audio_url: str, output_path="audio.mp3"):
     with open(output_path, "wb") as file:
         file.write(response.content)
 
-    logs.append("[Step 12] Audio downloaded.")
-    print("[Step 12] Audio downloaded.")
+    # logs.append("[Step 12] Audio downloaded.")
+    # print("[Step 12] Audio downloaded.")
 
     return output_path
 
 
 def transcribe_audio(audio_path: str):
-    logs.append("[Step 13] Transcribing audio...")
-    print("[Step 13] Transcribing audio...")
+    # logs.append("[Step 13] Transcribing audio...")
+    # print("[Step 13] Transcribing audio...")
 
 
     url = f"{OPENAI_URL}/audio/transcriptions"
@@ -258,14 +258,14 @@ def transcribe_audio(audio_path: str):
         response = requests.post(url, headers=headers, files=files)
 
     response.raise_for_status()
-    logs.append("[Step 14] Transcription complete.")
-    print("[Step 14] Transcription complete.")
+    # logs.append("[Step 14] Transcription complete.")
+    # print("[Step 14] Transcription complete.")
     return response.json()["text"]
 
 
 def summarize_text(text: str):
-    logs.append("[Step 15] Summarizing text...")
-    print("[Step 15] Summarizing text...")
+    # logs.append("[Step 15] Summarizing text...")
+    # print("[Step 15] Summarizing text...")
 
 
     url = f"{OPENAI_URL}/chat/completions"
@@ -275,8 +275,8 @@ def summarize_text(text: str):
     response = requests.post(url, json=data, headers=headers)
 
     response.raise_for_status()
-    logs.append("[Step 16] Summary generated.")
-    print("[Step 16] Summary generated.")
+    # logs.append("[Step 16] Summary generated.")
+    # print("[Step 16] Summary generated.")
    
     return response.json()["choices"][0]["message"]["content"]
 
