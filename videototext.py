@@ -95,7 +95,10 @@ def process_video_task(file_bytes: bytes, filename: str):
 
         logs.append("[Step 5] Getting export  URL...")
         print("[Step 5] Getting export  URL...")
-        audio_url = get_export_download_url(export_job_id)
+        # audio_url = get_export_download_url(export_job_id)
+        audio_url = get_export_download_url_with_retry(export_job_id)
+
+
         print("audio_url", audio_url)
 
 
@@ -185,11 +188,11 @@ def get_job_status(job_id: str):
     return response.json()["data"]
 
 
-def create_export_task(file_id: str):
+def create_export_task(converted_task_id: str):
     url = f"{CLOUDCONVERT_URL}/jobs"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}", "Content-Type": "application/json"}
 
-    data = {"tasks": {"export": {"operation": "export/url", "input": [file_id]}}}
+    data = {"tasks": {"export": {"operation": "export/url", "input": [converted_task_id]}}}
     response = requests.post(url, json=data, headers=headers)
     response.raise_for_status()
     return response.json()["data"]["id"]
@@ -207,6 +210,17 @@ def get_export_download_url(job_id: str):
             return task["result"]["files"][0]["url"]
 
     return None
+
+
+def get_export_download_url_with_retry(job_id: str, retries=5, delay=5):
+    for attempt in range(retries):
+        print(f"Attempt {attempt + 1}: Fetching export URL...")
+        url = get_export_download_url(job_id)
+        print('url is', url)
+        if url:
+            return url
+        time.sleep(delay)  # Wait before retrying
+    return None  # Return None if retries fail
 
 
 def download_audio(audio_url: str, output_path="audio.mp3"):
