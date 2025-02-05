@@ -6,16 +6,14 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from typing import Dict, List
+import io
 
-# Load environment variables
 load_dotenv()
 
-# FastAPI app initialization
 app = FastAPI()
 logs: List[str] = []
-results: Dict[str, Dict] = {}  # Store results temporarily
+results: Dict[str, Dict] = {} 
 
-# API Keys and URLs
 CLOUDCONVERT_API_KEY = os.getenv("CLOUDCONVERT_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 CLOUDCONVERT_URL = os.getenv("CLOUDCONVERT_URL")
@@ -95,8 +93,8 @@ def process_video_task(file_bytes: bytes, filename: str):
         print("export_job_id", export_job_id)
 
 
-        logs.append("[Step 5] Getting export download URL...")
-        print("[Step 5] Getting export download URL...")
+        logs.append("[Step 5] Getting export  URL...")
+        print("[Step 5] Getting export  URL...")
         audio_url = get_export_download_url(export_job_id)
         print("audio_url", audio_url)
 
@@ -106,16 +104,17 @@ def process_video_task(file_bytes: bytes, filename: str):
             print("[Error] Export failed")
             return {"error": "Export failed"}
 
-        logs.append("[Step 6] Downloading audio file...")
-        print("[Step 6] Downloading audio file...")
-        audio_path = download_audio(audio_url)
-        print("audio_path", audio_path)
+        logs.append("[Step 6] Retrieving audio file...")
+        print("[Step 6] Retrieving audio file...")
+        # audio_path = download_audio(audio_url)
+        # print("audio_path", audio_path)
 
 
         logs.append("[Step 7] Transcribing audio...")
         print("[Step 7] Transcribing audio...")
 
-        transcript = transcribe_audio(audio_path)
+        # transcript = transcribe_audio(audio_path)
+        transcript = transcribe_audio(audio_url)
         print("-----------Transcript is:", transcript)
 
         logs.append("[Step 8] Summarizing text...")
@@ -153,10 +152,6 @@ async def get_results(filename: str):
 
 
 def upload_to_cloudconvert(file_bytes: bytes, filename: str):
-    # logs.append("[Step 1] Uploading to CloudConvert...")
-    # print("[Step 1] Uploading to CloudConvert...")
-
-
     url = f"{CLOUDCONVERT_URL}/import/upload"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}"}
 
@@ -168,64 +163,39 @@ def upload_to_cloudconvert(file_bytes: bytes, filename: str):
     parameters = upload_data["result"]["form"]["parameters"]
 
     requests.post(upload_url, files={"file": (filename, file_bytes, "video/mp4")}, data=parameters).raise_for_status()
-
-    # logs.append("[Step 2] Upload finished.")
-    # print("[Step 2] Upload finished.")
-
     return upload_data["id"]
 
 
 def start_conversion(file_id: str, output_format="mp3"):
-    # logs.append("[Step 3] Starting CloudConvert job...")
-    # print("[Step 3] Starting CloudConvert job...")
-
     url = f"{CLOUDCONVERT_URL}/jobs"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}", "Content-Type": "application/json"}
 
     data = {"tasks": {"convert": {"operation": "convert", "input": [file_id], "output_format": output_format}}}
     response = requests.post(url, json=data, headers=headers)
     response.raise_for_status()
-
-    # logs.append("[Step 4] Conversion job started.")
-    # print("[Step 4] Conversion job started.")
     return response.json()["data"]["id"]
 
 
 def get_job_status(job_id: str):
-    # logs.append("[Step 5] Checking job status...")
-    # print("[Step 5] Checking job status...")
-
     url = f"{CLOUDCONVERT_URL}/jobs/{job_id}"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}"}
 
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-
-    # logs.append("[Step 6] Job status retrieved.")
-    # print("[Step 6] Job status retrieved.")
     return response.json()["data"]
 
 
 def create_export_task(file_id: str):
-    # logs.append("[Step 7] Creating export task...")
-    # print("[Step 7] Creating export task...")
-
     url = f"{CLOUDCONVERT_URL}/jobs"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}", "Content-Type": "application/json"}
 
     data = {"tasks": {"export": {"operation": "export/url", "input": [file_id]}}}
     response = requests.post(url, json=data, headers=headers)
     response.raise_for_status()
-
-    # logs.append("[Step 8] Export task created.")
-    # print("[Step 8] Export task created.")
     return response.json()["data"]["id"]
 
 
 def get_export_download_url(job_id: str):
-    # logs.append("[Step 9] Getting export download URL...")
-    # print("[Step 9] Getting export download URL...")
-
     url = f"{CLOUDCONVERT_URL}/jobs/{job_id}"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}"}
 
@@ -234,52 +204,71 @@ def get_export_download_url(job_id: str):
 
     for task in response.json()["data"]["tasks"]:
         if task["operation"] == "export/url" and task["status"] == "finished":
-            # logs.append("[Step 10] Download URL found.")
-            # print("[Step 10] Download URL found.")
             return task["result"]["files"][0]["url"]
 
     return None
 
 
 def download_audio(audio_url: str, output_path="audio.mp3"):
-    # logs.append("[Step 11] Downloading audio file...")
-    # print("[Step 11] Downloading audio file...")
-
     response = requests.get(audio_url)
     response.raise_for_status()
 
     with open(output_path, "wb") as file:
         file.write(response.content)
-
-    # logs.append("[Step 12] Audio downloaded.")
-    # print("[Step 12] Audio downloaded.")
-
     return output_path
 
 
-def transcribe_audio(audio_path: str):
-    # logs.append("[Step 13] Transcribing audio...")
-    # print("[Step 13] Transcribing audio...")
+# def transcribe_audio(audio_url: str):
+#     url = f"{OPENAI_URL}/audio/transcriptions"
+#     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
 
 
+#     print("transcribe url is", url)
+#     # with open(audio_path, "rb") as audio_file:
+#     #     files = {"file": audio_file, "model": (None, "whisper-1")}
+#     #     response = requests.post(url, headers=headers, files=files)
+
+#     response = requests.post(url, headers=headers, json={"audio_url": audio_url, "model": "whisper-1"})
+#     response.raise_for_status()
+    
+#     print('trans response is', response.json)
+#     return response.json()["text"]
+
+def transcribe_audio(audio_url: str):
     url = f"{OPENAI_URL}/audio/transcriptions"
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
 
-    with open(audio_path, "rb") as audio_file:
-        files = {"file": audio_file, "model": (None, "whisper-1")}
-        response = requests.post(url, headers=headers, files=files)
+    print("Transcribe URL:", url)
 
-    response.raise_for_status()
-    # logs.append("[Step 14] Transcription complete.")
-    # print("[Step 14] Transcription complete.")
-    return response.json()["text"]
+    try:
+        audio_response = requests.get(audio_url, stream=True)
+        print('aud res ', audio_response)
+        if audio_response.status_code != 200:
+            print("Error downloading audio file:", audio_response.status_code)
+            return None
+
+        audio_file = io.BytesIO(audio_response.content)
+        print('audio_file', audio_file)
 
 
+        files = {
+            'file': ('audio.mp3', audio_file, 'audio/mpeg')  # Send file-like object
+        }
+        data = {'model': 'whisper-1'}
+        print('files', files)
+
+
+        response = requests.post(url, headers=headers, files=files, data=data)
+        response.raise_for_status()  # Raise an error if request fails
+        
+        print("Transcription Response:", response.json())
+        return response.json()["text"]
+
+    except Exception as e:
+        print("An error occurred:", str(e))
+        return None
+    
 def summarize_text(text: str):
-    # logs.append("[Step 15] Summarizing text...")
-    # print("[Step 15] Summarizing text...")
-
-
     url = f"{OPENAI_URL}/chat/completions"
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
 
@@ -287,7 +276,4 @@ def summarize_text(text: str):
     response = requests.post(url, json=data, headers=headers)
 
     response.raise_for_status()
-    # logs.append("[Step 16] Summary generated.")
-    # print("[Step 16] Summary generated.")
-   
     return response.json()["choices"][0]["message"]["content"]
