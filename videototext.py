@@ -60,11 +60,14 @@ def process_video_task(file_bytes: bytes, filename: str):
         print("[Step 1] Uploading to CloudConvert...")
 
         file_id = upload_to_cloudconvert(file_bytes, filename)
+        print("file_id", file_id)
 
         logs.append("[Step 2] Starting conversion to MP3...")
         print("[Step 2] Starting conversion to MP3...")
 
         job_id = start_conversion(file_id, "mp3")
+        print("job_id", job_id)
+
 
         time.sleep(10)
 
@@ -72,11 +75,14 @@ def process_video_task(file_bytes: bytes, filename: str):
         print("[Step 3] Checking job status...")
 
         job_data = get_job_status(job_id)
+        print("job_data", job_data)
+
 
         converted_task_id = next(
             (task["id"] for task in job_data["tasks"] if task["operation"] == "convert" and task["status"] == "finished"),
             None
         )
+        print("converted_task_id", converted_task_id)
 
         if not converted_task_id:
             logs.append("[Error] Conversion failed")
@@ -86,10 +92,14 @@ def process_video_task(file_bytes: bytes, filename: str):
         logs.append("[Step 4] Creating export task...")
         print("[Step 4] Creating export task...")
         export_job_id = create_export_task(converted_task_id)
+        print("export_job_id", export_job_id)
+
 
         logs.append("[Step 5] Getting export download URL...")
         print("[Step 5] Getting export download URL...")
         audio_url = get_export_download_url(export_job_id)
+        print("audio_url", audio_url)
+
 
         if not audio_url:
             logs.append("[Error] Export failed")
@@ -99,6 +109,8 @@ def process_video_task(file_bytes: bytes, filename: str):
         logs.append("[Step 6] Downloading audio file...")
         print("[Step 6] Downloading audio file...")
         audio_path = download_audio(audio_url)
+        print("audio_path", audio_path)
+
 
         logs.append("[Step 7] Transcribing audio...")
         print("[Step 7] Transcribing audio...")
@@ -123,8 +135,8 @@ def process_video_task(file_bytes: bytes, filename: str):
             "transcript": transcript,
             "summary": summary,
         }
-
-        return results[filename]  # ✅ Returns response immediately
+        print("results[filename]", results[filename])
+        return results[filename] 
 
     except Exception as e:
         logs.append(f"[Error] Exception occurred: {str(e)}")
