@@ -33,8 +33,8 @@ async def get_current_step():
 @app.post("/process_video/")
 async def process_video(file: UploadFile = File(...)):
     logs.clear()
-    logs.append("[Step 0] Starting process_video...")
-    print("[Step 0] Starting process_video...")
+    logs.append("[Step 0/9] Starting process_video...")
+    print("[Step 0/9] Starting process_video...")
 
 
     if not file.filename.endswith(".mp4"):
@@ -54,14 +54,14 @@ async def process_video(file: UploadFile = File(...)):
 def process_video_task(file_bytes: bytes, filename: str):
     """Runs the video processing logic in a separate thread."""
     try:
-        logs.append("[Step 1] Uploading to CloudConvert...")
-        print("[Step 1] Uploading to CloudConvert...")
+        logs.append("[Step 1/9] Uploading to CloudConvert...")
+        print("[Step 1/9] Uploading to CloudConvert...")
 
         file_id = upload_to_cloudconvert(file_bytes, filename)
         print("file_id", file_id)
 
-        logs.append("[Step 2] Starting conversion to MP3...")
-        print("[Step 2] Starting conversion to MP3...")
+        logs.append("[Step 2/9] Starting conversion to MP3...")
+        print("[Step 2/9] Starting conversion to MP3...")
 
         job_id = start_conversion(file_id, "mp3")
         print("job_id", job_id)
@@ -69,8 +69,8 @@ def process_video_task(file_bytes: bytes, filename: str):
 
         time.sleep(10)
 
-        logs.append("[Step 3] Checking job status...")
-        print("[Step 3] Checking job status...")
+        logs.append("[Step 3/9] Checking job status...")
+        print("[Step 3/9] Checking job status...")
 
         job_data = get_job_status(job_id)
         print("job_data", job_data)
@@ -87,14 +87,14 @@ def process_video_task(file_bytes: bytes, filename: str):
             print("[Error] Conversion failed")
             return {"error": "Conversion failed"}
 
-        logs.append("[Step 4] Creating export task...")
-        print("[Step 4] Creating export task...")
+        logs.append("[Step 4/9] Creating export task...")
+        print("[Step 4/9] Creating export task...")
         export_job_id = create_export_task(converted_task_id)
         print("export_job_id", export_job_id)
 
 
-        logs.append("[Step 5] Getting export  URL...")
-        print("[Step 5] Getting export  URL...")
+        logs.append("[Step 5/9] Getting export  URL...")
+        print("[Step 5/9] Getting export  URL...")
         # audio_url = get_export_download_url(export_job_id)
         audio_url = get_export_download_url_with_retry(export_job_id)
 
@@ -107,27 +107,27 @@ def process_video_task(file_bytes: bytes, filename: str):
             print("[Error] Export failed")
             return {"error": "Export failed"}
 
-        logs.append("[Step 6] Retrieving audio file...")
-        print("[Step 6] Retrieving audio file...")
+        logs.append("[Step 6/9] Retrieving audio file...")
+        print("[Step 6/9] Retrieving audio file...")
         # audio_path = download_audio(audio_url)
         # print("audio_path", audio_path)
 
 
-        logs.append("[Step 7] Transcribing audio...")
-        print("[Step 7] Transcribing audio...")
+        logs.append("[Step 7/9] Transcribing audio...")
+        print("[Step 7/9] Transcribing audio...")
 
         # transcript = transcribe_audio(audio_path)
         transcript = transcribe_audio(audio_url)
         print("-----------Transcript is:", transcript)
 
-        logs.append("[Step 8] Summarizing text...")
-        print("[Step 8] Summarizing text...")
+        logs.append("[Step 8/9] Summarizing text...")
+        print("[Step 8/9] Summarizing text...")
 
         summary = summarize_text(transcript)
         print("-----------Summary is:", summary)
 
-        logs.append("[Step 9] Processing complete.")
-        print("[Step 9] Processing complete.")
+        logs.append("[Step 9/9] Processing complete.")
+        print("[Step 9/9] Processing complete.")
 
         # Store result in `results`
         results[filename] = {
