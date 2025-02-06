@@ -129,7 +129,6 @@ def process_video_task(file_bytes: bytes, filename: str):
         logs.append("[Step 9/9] Processing complete.")
         print("[Step 9/9] Processing complete.")
 
-        # Store result in `results`
         results[filename] = {
             "message": "Processing complete",
             "filename": filename,
