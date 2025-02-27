@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Performance Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .dashboard-container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .channel-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .channel-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            font-size: 1.5rem;
+            color: #333;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0d6efd;
+            margin-bottom: 5px;
+        }
+        .metric-label {
+            font-size: 13px;
+            color: #6c757d;
+        }
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .positive-rate {
+            color: #198754;
+            font-weight: 500;
+        }
+        .negative-rate {
+            color: #dc3545;
+            font-weight: 500;
+        }
+        .refresh-time {
+            text-align: right;
+            color: #6c757d;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="refresh-time" id="lastUpdated"></div>
+
+        <!-- Email Campaigns -->
+        <div class="channel-section">
+            <h2 class="channel-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-envelope" viewBox="0 0 16 16">
+                    <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
+                </svg>
+                Email Campaign Performance
+            </h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="emailTotalRecipients">-</div>
+                    <div class="metric-label">Total Recipients</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="emailTotalOpens">-</div>
+                    <div class="metric-label">Total Opens</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="emailTotalClicks">-</div>
+                    <div class="metric-label">Total Clicks</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="emailTotalRevenue">-</div>
+                    <div class="metric-label">Total Revenue</div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Campaign Name</th>
+                            <th>Recipients</th>
+                            <th>Open Rate</th>
+                            <th>Click Rate</th>
+                            <th>Revenue</th>
+                            <th>Conversion Rate</th>
+                            <th>Delivery Rate</th>
+                            <th>Bounce Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="emailCampaignTableBody">
+                        <tr><td colspan="8" class="loading">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SMS Campaigns -->
+        <div class="channel-section">
+            <h2 class="channel-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chat-dots" viewBox="0 0 16 16">
+                    <path d="M5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                    <path d="m2.165 15.803.02-.004c1.83-.363 2.948-.842 3.468-1.105A9.06 9.06 0 0 0 8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6a10.437 10.437 0 0 1-.524 2.318l-.003.011a10.722 10.722 0 0 1-.244.637c-.079.186.074.394.273.362a21.673 21.673 0 0 0 .693-.125zm.8-3.108a1 1 0 0 0-.287-.801C1.618 10.83 1 9.468 1 8c0-3.192 3.004-6 7-6s7 2.808 7 6c0 3.193-3.004 6-7 6a8.06 8.06 0 0 1-2.088-.272 1 1 0 0 0-.711.074c-.387.196-1.24.57-2.634.893a10.97 10.97 0 0 0 .398-2z"/>
+                </svg>
+                SMS Campaign Performance
+            </h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="smsTotalRecipients">-</div>
+                    <div class="metric-label">Total Recipients</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="smsTotalClicks">-</div>
+                    <div class="metric-label">Total Clicks</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="smsConversionValue">-</div>
+                    <div class="metric-label">Conversion Value</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="smsDeliveryRate">-</div>
+                    <div class="metric-label">Avg. Delivery Rate</div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Campaign Name</th>
+                            <th>Recipients</th>
+                            <th>Click Rate</th>
+                            <th>Revenue</th>
+                            <th>Conversion Rate</th>
+                            <th>Delivery Rate</th>
+                            <th>Failed</th>
+                            <th>Unsubscribes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="smsCampaignTableBody">
+                        <tr><td colspan="8" class="loading">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Email Flows -->
+        <div class="channel-section">
+            <h2 class="channel-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-diagram-3" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm4.5.5A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/>
+                </svg>
+                Email Flow Performance
+            </h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="emailFlowTotalRecipients">-</div>
+                    <div class="metric-label">Total Recipients</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="emailFlowTotalOpens">-</div>
+                    <div class="metric-label">Total Opens</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="emailFlowTotalClicks">-</div>
+                    <div class="metric-label">Total Clicks</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="emailFlowTotalRevenue">-</div>
+                    <div class="metric-label">Total Revenue</div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Flow Name</th>
+                            <th>Recipients</th>
+                            <th>Open Rate</th>
+                            <th>Click Rate</th>
+                            <th>Revenue</th>
+                            <th>Conversion Rate</th>
+                            <th>Delivery Rate</th>
+                            <th>Bounce Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="emailFlowTableBody">
+                        <tr><td colspan="8" class="loading">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SMS Flows -->
+        <div class="channel-section">
+            <h2 class="channel-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-diagram-3" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm4.5.5A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/>
+                </svg>
+                SMS Flow Performance
+            </h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="smsFlowTotalRecipients">-</div>
+                    <div class="metric-label">Total Recipients</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="smsFlowTotalClicks">-</div>
+                    <div class="metric-label">Total Clicks</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="smsFlowConversionValue">-</div>
+                    <div class="metric-label">Conversion Value</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="smsFlowDeliveryRate">-</div>
+                    <div class="metric-label">Avg. Delivery Rate</div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Flow Name</th>
+                            <th>Recipients</th>
+                            <th>Click Rate</th>
+                            <th>Revenue</th>
+                            <th>Conversion Rate</th>
+                            <th>Delivery Rate</th>
+                            <th>Failed</th>
+                            <th>Unsubscribes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="smsFlowTableBody">
+                        <tr><td colspan="8" class="loading">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatNumber(num) {
+            return new Intl.NumberFormat().format(num || 0);
+        }
+
+        function formatRate(rate) {
+            const value = ((rate || 0) * 100).toFixed(1) + '%';
+            const isPositive = (rate || 0) > 0;
+            return `<span class="${isPositive ? 'positive-rate' : 'negative-rate'}">${value}</span>`;
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2
+            }).format(amount || 0);
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = 
+                `Last updated: ${now.toLocaleString()}`;
+        }
+
+        function updateDashboard() {
+            fetch('/api/campaign-data')
+                .then(response => response.json())
+                .then(response => {
+                    console.log('API Response:', response); // For debugging
+
+                    // Update Email Metrics
+                    const emailResults = response.email?.data?.attributes?.results || [];
+                    const emailTotals = emailResults.reduce((acc, campaign) => {
+                        const stats = campaign.statistics;
+                        return {
+                            recipients: acc.recipients + (stats.recipients || 0),
+                            opens: acc.opens + (stats.opens || 0),
+                            clicks: acc.clicks + (stats.clicks || 0),
+                            revenue: acc.revenue + ((stats.revenue_per_recipient || 0) * (stats.recipients || 0))
+                        };
+                    }, { recipients: 0, opens: 0, clicks: 0, revenue: 0 });
+
+                    // Update Email Summary Cards
+                    document.getElementById('emailTotalRecipients').textContent = formatNumber(emailTotals.recipients);
+                    document.getElementById('emailTotalOpens').textContent = formatNumber(emailTotals.opens);
+                    document.getElementById('emailTotalClicks').textContent = formatNumber(emailTotals.clicks);
+                    document.getElementById('emailTotalRevenue').textContent = formatCurrency(emailTotals.revenue);
+
+                    // Update Email Table
+                    const emailTableBody = document.getElementById('emailCampaignTableBody');
+                    if (emailResults.length > 0) {
+                        emailTableBody.innerHTML = emailResults.map(campaign => {
+                            const stats = campaign.statistics;
+                            const revenue = (stats.revenue_per_recipient || 0) * (stats.recipients || 0);
+                            return `
+                                <tr>
+                                    <td>${campaign.campaign_name || 'Unnamed Campaign'}</td>
+                                    <td>${formatNumber(stats.recipients)}</td>
+                                    <td>${formatRate(stats.open_rate)}</td>
+                                    <td>${formatRate(stats.click_rate)}</td>
+                                    <td>${formatCurrency(revenue)}</td>
+                                    <td>${formatRate(stats.conversion_rate)}</td>
+                                    <td>${formatRate(stats.delivery_rate)}</td>
+                                    <td>${formatRate(stats.bounce_rate)}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                    } else {
+                        emailTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No email campaigns found</td></tr>';
+                    }
+
+                    // Update SMS Metrics
+                    const smsResults = response.sms?.data?.attributes?.results || [];
+                    const smsTotals = smsResults.reduce((acc, campaign) => {
+                        const stats = campaign.statistics;
+                        return {
+                            recipients: acc.recipients + (stats.recipients || 0),
+                            clicks: acc.clicks + (stats.clicks || 0),
+                            conversion_value: acc.conversion_value + (stats.conversion_value || 0),
+                            delivery_rate: acc.delivery_rate + (stats.delivery_rate || 0)
+                        };
+                    }, { recipients: 0, clicks: 0, conversion_value: 0, delivery_rate: 0 });
+
+                    // Update SMS Summary Cards
+                    document.getElementById('smsTotalRecipients').textContent = formatNumber(smsTotals.recipients);
+                    document.getElementById('smsTotalClicks').textContent = formatNumber(smsTotals.clicks);
+                    document.getElementById('smsConversionValue').textContent = formatCurrency(smsTotals.conversion_value);
+                    document.getElementById('smsDeliveryRate').innerHTML = 
+                        formatRate(smsTotals.delivery_rate / (smsResults.length || 1));
+
+                    // Update SMS Table
+                    const smsTableBody = document.getElementById('smsCampaignTableBody');
+                    if (smsResults.length > 0) {
+                        smsTableBody.innerHTML = smsResults.map(campaign => {
+                            const stats = campaign.statistics;
+                            const revenue = (stats.revenue_per_recipient || 0) * (stats.recipients || 0);
+                            return `
+                                <tr>
+                                    <td>${campaign.campaign_name || 'Unnamed Campaign'}</td>
+                                    <td>${formatNumber(stats.recipients)}</td>
+                                    <td>${formatRate(stats.click_rate)}</td>
+                                    <td>${formatCurrency(revenue)}</td>
+                                    <td>${formatRate(stats.conversion_rate)}</td>
+                                    <td>${formatRate(stats.delivery_rate)}</td>
+                                    <td>${formatNumber(stats.failed)}</td>
+                                    <td>${formatNumber(stats.unsubscribes)}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                    } else {
+                        smsTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No SMS campaigns found</td></tr>';
+                    }
+
+                    // Fetch flow data
+                    fetch('/api/flow-data')
+                        .then(response => response.json())
+                        .then(response => {
+                            console.log('Flow API Response:', response);
+
+                            // Update Email Flow Metrics
+                            const emailFlowResults = response.email?.data?.attributes?.results || [];
+                            const emailFlowTotals = emailFlowResults.reduce((acc, flow) => {
+                                const stats = flow.statistics;
+                                return {
+                                    recipients: acc.recipients + (stats.recipients || 0),
+                                    opens: acc.opens + (stats.opens || 0),
+                                    clicks: acc.clicks + (stats.clicks || 0),
+                                    revenue: acc.revenue + ((stats.revenue_per_recipient || 0) * (stats.recipients || 0))
+                                };
+                            }, { recipients: 0, opens: 0, clicks: 0, revenue: 0 });
+
+                            // Update Email Flow Summary Cards
+                            document.getElementById('emailFlowTotalRecipients').textContent = formatNumber(emailFlowTotals.recipients);
+                            document.getElementById('emailFlowTotalOpens').textContent = formatNumber(emailFlowTotals.opens);
+                            document.getElementById('emailFlowTotalClicks').textContent = formatNumber(emailFlowTotals.clicks);
+                            document.getElementById('emailFlowTotalRevenue').textContent = formatCurrency(emailFlowTotals.revenue);
+
+                            // Update Email Flow Table
+                            const emailFlowTableBody = document.getElementById('emailFlowTableBody');
+                            if (emailFlowResults.length > 0) {
+                                emailFlowTableBody.innerHTML = emailFlowResults.map(flow => {
+                                    const stats = flow.statistics;
+                                    const revenue = (stats.revenue_per_recipient || 0) * (stats.recipients || 0);
+                                    return `
+                                        <tr>
+                                            <td>${flow.flow_name || 'Unnamed Flow'}</td>
+                                            <td>${formatNumber(stats.recipients)}</td>
+                                            <td>${formatRate(stats.open_rate)}</td>
+                                            <td>${formatRate(stats.click_rate)}</td>
+                                            <td>${formatCurrency(revenue)}</td>
+                                            <td>${formatRate(stats.conversion_rate)}</td>
+                                            <td>${formatRate(stats.delivery_rate)}</td>
+                                            <td>${formatRate(stats.bounce_rate)}</td>
+                                        </tr>
+                                    `;
+                                }).join('');
+                            } else {
+                                emailFlowTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No email flows found</td></tr>';
+                            }
+
+                            // Update SMS Flow Metrics
+                            const smsFlowResults = response.sms?.data?.attributes?.results || [];
+                            const smsFlowTotals = smsFlowResults.reduce((acc, flow) => {
+                                const stats = flow.statistics;
+                                return {
+                                    recipients: acc.recipients + (stats.recipients || 0),
+                                    clicks: acc.clicks + (stats.clicks || 0),
+                                    conversion_value: acc.conversion_value + (stats.conversion_value || 0),
+                                    delivery_rate: acc.delivery_rate + (stats.delivery_rate || 0)
+                                };
+                            }, { recipients: 0, clicks: 0, conversion_value: 0, delivery_rate: 0 });
+
+                            // Update SMS Flow Summary Cards
+                            document.getElementById('smsFlowTotalRecipients').textContent = formatNumber(smsFlowTotals.recipients);
+                            document.getElementById('smsFlowTotalClicks').textContent = formatNumber(smsFlowTotals.clicks);
+                            document.getElementById('smsFlowConversionValue').textContent = formatCurrency(smsFlowTotals.conversion_value);
+                            document.getElementById('smsFlowDeliveryRate').innerHTML = 
+                                formatRate(smsFlowTotals.delivery_rate / (smsFlowResults.length || 1));
+
+                            // Update SMS Flow Table
+                            const smsFlowTableBody = document.getElementById('smsFlowTableBody');
+                            if (smsFlowResults.length > 0) {
+                                smsFlowTableBody.innerHTML = smsFlowResults.map(flow => {
+                                    const stats = flow.statistics;
+                                    const revenue = (stats.revenue_per_recipient || 0) * (stats.recipients || 0);
+                                    return `
+                                        <tr>
+                                            <td>${flow.flow_name || 'Unnamed Flow'}</td>
+                                            <td>${formatNumber(stats.recipients)}</td>
+                                            <td>${formatRate(stats.click_rate)}</td>
+                                            <td>${formatCurrency(revenue)}</td>
+                                            <td>${formatRate(stats.conversion_rate)}</td>
+                                            <td>${formatRate(stats.delivery_rate)}</td>
+                                            <td>${formatNumber(stats.failed)}</td>
+                                            <td>${formatNumber(stats.unsubscribes)}</td>
+                                        </tr>
+                                    `;
+                                }).join('');
+                            } else {
+                                smsFlowTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No SMS flows found</td></tr>';
+                            }
+
+                            updateLastUpdated();
+                        })
+                        .catch(error => {
+                            console.error('Flow Error:', error);
+                            document.getElementById('emailFlowTableBody').innerHTML = 
+                                '<tr><td colspan="8" class="text-center text-danger">Error loading flow data</td></tr>';
+                            document.getElementById('smsFlowTableBody').innerHTML = 
+                                '<tr><td colspan="8" class="text-center text-danger">Error loading flow data</td></tr>';
+                        });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('emailCampaignTableBody').innerHTML = 
+                        '<tr><td colspan="8" class="text-center text-danger">Error loading data</td></tr>';
+                    document.getElementById('smsCampaignTableBody').innerHTML = 
+                        '<tr><td colspan="8" class="text-center text-danger">Error loading data</td></tr>';
+                });
+        }
+
+        // Initial load
+        updateDashboard();
+
+        // Refresh every 5 minutes
+        setInterval(updateDashboard, 300000);
+    </script>
+</body>
+</html>
