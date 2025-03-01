@@ -19,7 +19,6 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 CLOUDCONVERT_URL = os.getenv("CLOUDCONVERT_URL")
 OPENAI_URL = os.getenv("OPENAI_URL")
 
-
 @app.get("/")
 async def read_root():
     return {"message": "Hello, World!"}
@@ -28,7 +27,6 @@ async def read_root():
 async def get_current_step():
     print('logs are', logs)
     return {"logs": logs} if logs else {"message": "No steps started yet"}
-
 
 @app.post("/process_video/")
 async def process_video(file: UploadFile = File(...)):
@@ -48,8 +46,6 @@ async def process_video(file: UploadFile = File(...)):
     thread.start()
 
     return JSONResponse(content={"message": "Processing started, check /current_step"})
-
-
 
 def process_video_task(file_bytes: bytes, filename: str):
     """Runs the video processing logic in a separate thread."""
@@ -75,11 +71,12 @@ def process_video_task(file_bytes: bytes, filename: str):
         job_data = get_job_status(job_id)
         print("job_data", job_data)
 
-
-        converted_task_id = next(
-            (task["id"] for task in job_data["tasks"] if task["operation"] == "convert" and task["status"] == "finished"),
-            None
-        )
+        # converted_task_id = next(
+        #     (task["id"] for task in job_data["tasks"] if task["operation"] == "convert" and task["status"] == "finished"),
+        #     None
+        # )
+        
+        converted_task_id = wait_for_job_completion(job_id)
         print("converted_task_id", converted_task_id)
 
         if not converted_task_id:
@@ -140,18 +137,15 @@ def process_video_task(file_bytes: bytes, filename: str):
         return results[filename] 
 
     except Exception as e:
-        logs.append(f"[Error] Exception occurred: {str(e)}")
-        print(f"[Error] Exception occurred: {str(e)}")
+        logs.append(f"[Error] Exception occurred 1: {str(e)}")
+        print(f"[Error] Exception occurred 1: {str(e)}")
         return {"error": str(e)}
-
-
 
 @app.get("/results/{filename}")
 async def get_results(filename: str):
     if filename in results:
         return results[filename]
     return {"message": "Results not available yet"}
-
 
 def upload_to_cloudconvert(file_bytes: bytes, filename: str):
     url = f"{CLOUDCONVERT_URL}/import/upload"
@@ -167,7 +161,6 @@ def upload_to_cloudconvert(file_bytes: bytes, filename: str):
     requests.post(upload_url, files={"file": (filename, file_bytes, "video/mp4")}, data=parameters).raise_for_status()
     return upload_data["id"]
 
-
 def start_conversion(file_id: str, output_format="mp3"):
     url = f"{CLOUDCONVERT_URL}/jobs"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}", "Content-Type": "application/json"}
@@ -177,7 +170,6 @@ def start_conversion(file_id: str, output_format="mp3"):
     response.raise_for_status()
     return response.json()["data"]["id"]
 
-
 def get_job_status(job_id: str):
     url = f"{CLOUDCONVERT_URL}/jobs/{job_id}"
     headers = {"Authorization": f"Bearer {CLOUDCONVERT_API_KEY}"}
@@ -185,6 +177,34 @@ def get_job_status(job_id: str):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json()["data"]
+
+def wait_for_job_completion(job_id, max_retries=30, delay=5):
+    """Polls CloudConvert job status until it's finished or fails."""
+    for _ in range(max_retries):
+        job_data = get_job_status(job_id)
+        print("job_data", job_data)
+
+        # Check if the job contains the finished conversion task
+        converted_task_id = next(
+            (task["id"] for task in job_data.get("tasks", []) 
+             if task.get("operation") == "convert" and task.get("status") == "finished"),
+            None
+        )
+
+        if converted_task_id:
+            return converted_task_id  # Conversion successful
+        
+        if any(task.get("status") in ["failed", "error"] for task in job_data.get("tasks", [])):
+            print("[Error] Conversion failed")
+            logs.append("[Error] Conversion failed")
+            return None
+
+        print("[Step 3/9] Still processing... Retrying in", delay, "seconds")
+        time.sleep(delay)
+
+    print("[Error] Conversion timed out")
+    logs.append("[Error] Conversion timed out")
+    return None  # Timeout error
 
 
 def create_export_task(converted_task_id: str):
@@ -195,7 +215,6 @@ def create_export_task(converted_task_id: str):
     response = requests.post(url, json=data, headers=headers)
     response.raise_for_status()
     return response.json()["data"]["id"]
-
 
 def get_export_download_url(job_id: str):
     url = f"{CLOUDCONVERT_URL}/jobs/{job_id}"
@@ -210,7 +229,6 @@ def get_export_download_url(job_id: str):
 
     return None
 
-
 def get_export_download_url_with_retry(job_id: str, retries=5, delay=5):
     for attempt in range(retries):
         print(f"Attempt {attempt + 1}: Fetching export URL...")
@@ -221,7 +239,6 @@ def get_export_download_url_with_retry(job_id: str, retries=5, delay=5):
         time.sleep(delay)  # Wait before retrying
     return None  # Return None if retries fail
 
-
 def download_audio(audio_url: str, output_path="audio.mp3"):
     response = requests.get(audio_url)
     response.raise_for_status()
@@ -229,23 +246,6 @@ def download_audio(audio_url: str, output_path="audio.mp3"):
     with open(output_path, "wb") as file:
         file.write(response.content)
     return output_path
-
-
-# def transcribe_audio(audio_url: str):
-#     url = f"{OPENAI_URL}/audio/transcriptions"
-#     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
-
-
-#     print("transcribe url is", url)
-#     # with open(audio_path, "rb") as audio_file:
-#     #     files = {"file": audio_file, "model": (None, "whisper-1")}
-#     #     response = requests.post(url, headers=headers, files=files)
-
-#     response = requests.post(url, headers=headers, json={"audio_url": audio_url, "model": "whisper-1"})
-#     response.raise_for_status()
-    
-#     print('trans response is', response.json)
-#     return response.json()["text"]
 
 def transcribe_audio(audio_url: str):
     url = f"{OPENAI_URL}/audio/transcriptions"
@@ -290,3 +290,22 @@ def summarize_text(text: str):
 
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
+
+
+
+
+# def transcribe_audio(audio_url: str):
+#     url = f"{OPENAI_URL}/audio/transcriptions"
+#     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
+
+
+#     print("transcribe url is", url)
+#     # with open(audio_path, "rb") as audio_file:
+#     #     files = {"file": audio_file, "model": (None, "whisper-1")}
+#     #     response = requests.post(url, headers=headers, files=files)
+
+#     response = requests.post(url, headers=headers, json={"audio_url": audio_url, "model": "whisper-1"})
+#     response.raise_for_status()
+    
+#     print('trans response is', response.json)
+#     return response.json()["text"]
