@@ -75,7 +75,7 @@ def process_video_task(file_bytes: bytes, filename: str):
         #     (task["id"] for task in job_data["tasks"] if task["operation"] == "convert" and task["status"] == "finished"),
         #     None
         # )
-        
+
         converted_task_id = wait_for_job_completion(job_id)
         print("converted_task_id", converted_task_id)
 
@@ -182,7 +182,7 @@ def wait_for_job_completion(job_id, max_retries=30, delay=5):
     """Polls CloudConvert job status until it's finished or fails."""
     for _ in range(max_retries):
         job_data = get_job_status(job_id)
-        print("job_data", job_data)
+        print("job_data in WFJC", job_data)
 
         # Check if the job contains the finished conversion task
         converted_task_id = next(
@@ -194,6 +194,8 @@ def wait_for_job_completion(job_id, max_retries=30, delay=5):
         if converted_task_id:
             return converted_task_id  # Conversion successful
         
+        print("converted_task_id in WFJC", converted_task_id)
+
         if any(task.get("status") in ["failed", "error"] for task in job_data.get("tasks", [])):
             print("[Error] Conversion failed")
             logs.append("[Error] Conversion failed")
