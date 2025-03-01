@@ -133,6 +133,8 @@ def process_video_task(file_bytes: bytes, filename: str):
             "transcript": transcript,
             "summary": summary,
         }
+        print("Fetching Results")
+        logs.append("Fetching Results")
         print("results[filename]", results[filename])
         return results[filename] 
 
