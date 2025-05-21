@@ -38,3 +38,54 @@ OPENAI_API_KEY=your_openai_api_key
 OPENAI_URL=https://api.openai.com/v1
 ```
 
+## Install dependencies
+
+```bash
+pip install fastapi requests python-dotenv uvicorn
+```
+#### Install dependencies
+```bash
+pip install fastapi requests python-dotenv uvicorn
+```
+
+
+## API Endpoints
+
+### GET /
+
+Returns a welcome message.
+
+### POST /process_video/
+
+Upload an MP4 video file to start processing (conversion, transcription, summary).  
+Returns immediately with a message to check progress.
+
+### GET /current_step
+
+Returns current logs and progress steps of the ongoing processing.
+
+### GET /results/{filename}
+
+Returns the processing results including MP3 URL, transcript, and summary for the uploaded video.
+
+---
+
+## How It Works
+
+1. Upload a `.mp4` video file to `/process_video/`.  
+2. The file is uploaded to CloudConvert and converted to MP3.  
+3. The app polls CloudConvert for job completion.  
+4. Once converted, it exports and retrieves the MP3 URL.  
+5. The MP3 audio is sent to OpenAI Whisper for transcription.  
+6. The transcription text is sent to OpenAI GPT-4 for summarization.  
+7. Results are stored and accessible via `/results/{filename}`.  
+8. Logs and progress can be tracked at `/current_step`.
+
+---
+
+## Notes
+
+- Only `.mp4` video files are accepted.  
+- Processing happens asynchronously; results may take some time.  
+- Error logs are stored and available via `/current_step`.  
+- Uses environment variables for sensitive keys.
